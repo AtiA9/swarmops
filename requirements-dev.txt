@@ -1,0 +1,4 @@
+-r api/requirements.txt
+-r worker/requirements.txt
+pytest==8.3.3
+fakeredis==2.24.1
