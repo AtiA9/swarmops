@@ -63,7 +63,7 @@ jobs:
       # image package gets a new, not-yet-patched CVE, through no fault of our code -
       # see docs/SLO.md for the reasoning.
       - name: Trivy scan - swarmops-${{ matrix.service }}
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: swarmops-${{ matrix.service }}:${{ github.sha }}
           format: table
