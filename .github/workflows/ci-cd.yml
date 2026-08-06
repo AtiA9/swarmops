@@ -1,0 +1,106 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest tests/ -v
+
+  # Build api and worker separately (not one monolithic image), save each as an
+  # artifact instead of pushing yet - the image only reaches the registry after
+  # it clears the security-scan gate below.
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t swarmops-${{ matrix.service }}:${{ github.sha }} -f Dockerfile.${{ matrix.service }} .
+      - run: docker save swarmops-${{ matrix.service }}:${{ github.sha }} -o /tmp/${{ matrix.service }}.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.service }}
+          path: /tmp/${{ matrix.service }}.tar
+          retention-days: 1
+
+  security-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.service }}
+          path: /tmp
+      - run: docker load -i /tmp/${{ matrix.service }}.tar
+
+      # Real gate: fails the job (and therefore blocks push) on any CRITICAL CVE that
+      # has a fix available. `ignore-unfixed` is a deliberate policy choice, not a
+      # loophole: without it this gate would go permanently red the moment any base-
+      # image package gets a new, not-yet-patched CVE, through no fault of our code -
+      # see docs/SLO.md for the reasoning.
+      - name: Trivy scan - swarmops-${{ matrix.service }}
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: swarmops-${{ matrix.service }}:${{ github.sha }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      - name: Bandit scan - ${{ matrix.service }}/
+        run: |
+          pip install bandit==1.7.10
+          bandit -r ${{ matrix.service }}/ -ll
+
+  push:
+    needs: security-scan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api, worker]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.service }}
+          path: /tmp
+      - run: docker load -i /tmp/${{ matrix.service }}.tar
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and push (by SHA, not just latest)
+        run: |
+          IMAGE=${{ env.REGISTRY }}/${{ github.repository_owner }}/swarmops-${{ matrix.service }}
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          docker tag swarmops-${{ matrix.service }}:${{ github.sha }} "$IMAGE:${{ github.sha }}"
+          docker tag swarmops-${{ matrix.service }}:${{ github.sha }} "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
