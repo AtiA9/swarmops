@@ -92,6 +92,24 @@ pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
+## Kubernetes + GitOps — proven live, not just written
+
+This was actually stood up and exercised, against this repo's real, pushed commit
+history:
+
+1. `kind create cluster --name swarmops`, ArgoCD installed via its standard manifests.
+2. `kubectl apply -f k8s/argocd-application.yaml` — the `Application` pulled `k8s/`
+   straight from `https://github.com/AtiA9/swarmops.git`, `main`, and synced
+   automatically. Result: `sync=Synced health=Healthy`, all 8 services running,
+   `swarmops-api` at real `replicas: 2`.
+3. **GitOps drift/self-heal, proven live:** `kubectl scale deployment
+   swarmops-worker --replicas=3` (git says `1`) → ArgoCD's `selfHeal` reverted it back
+   to 1 within seconds, no human ran `kubectl apply` to fix it — git stayed the source
+   of truth the whole time.
+4. Confirmed the app itself works inside the cluster too: `kubectl port-forward
+   svc/nginx`, `curl /api/health` → `200`, and a bad-token telemetry POST → `403`
+   (the anti-spoofing check works identically in Kubernetes as in Docker Compose).
+
 ## What's actually been verified end-to-end (and what hasn't)
 
 In the spirit of the curriculum's own rule about honest documentation over a fake
@@ -104,9 +122,9 @@ In the spirit of the curriculum's own rule about honest documentation over a fak
 | Worker writes history to Postgres without blocking ingest | ✅ verified |
 | Forced low-battery / signal-lost / geofence-breach → real alert in Postgres + firing Prometheus alert | ✅ verified, all three |
 | Unregistered/spoofed unit rejected | ✅ verified (`--spoof-test`, 4/4 cases pass) |
-| CI: test → build (matrix) → Trivy+Bandit gate → push to GHCR | ✅ pipeline defined and designed to be green — see Actions tab for the actual run on this repo |
+| CI: test → build (matrix) → Trivy+Bandit gate → push to GHCR | ⚠️ pipeline is defined and its individual stages were verified manually against the real built images/source (pytest: 16/16 pass; Bandit: clean on api/worker; Trivy CRITICAL+HIGH with `ignore-unfixed`: clean on both images) — but **GitHub Actions has not executed a single run on this repo** despite several pushes to `main` after the workflow was added. The workflow file is valid and registered (`gh api .../actions/workflows` shows it `active`), yet `gh api .../actions/runs` stays at 0 runs, with no error, no queued run, nothing. This matches GitHub's new-account Actions-verification gate. **Action needed:** check `https://github.com/AtiA9/swarmops/actions` while logged in as the repo owner for a verification banner. |
 | Terraform (VPC/EC2/SG) + Ansible (Docker install + deploy) | ✅ written, `terraform validate`/`fmt` and `ansible-playbook --syntax-check` clean — **not applied to real AWS** (no cloud account provisioned for this build; see `docs/SLO.md`) |
-| Kubernetes manifests + ArgoCD, `api` at `replicas: 2` | ✅ written **and proven live** against a local `kind` cluster synced from this repo's real git history (see below) |
+| Kubernetes manifests + ArgoCD, `api` at `replicas: 2` | ✅ written **and proven live** against a local `kind` cluster, with the ArgoCD `Application` synced from this repo's real, pushed git history (see below). Because CI hasn't been able to push images to GHCR yet (see above), the images used in that live demo were built locally and loaded directly into the kind node (`kind load docker-image`) with `imagePullPolicy: IfNotPresent` rather than pulled from a registry — a deliberate, documented substitution for the local proof, not a hidden shortcut. Once Actions is unblocked, `git push` alone will make the real pipeline build/scan/push real SHA-tagged images with no manual steps. |
 | Grafana dashboard + real firing alert rule | ✅ verified (`SwarmOpsAnyUnitSignalLost` observed firing during the forced-anomaly test) |
 | SLO doc, 2 runbooks, postmortem template | ✅ this repo, `docs/` |
 
