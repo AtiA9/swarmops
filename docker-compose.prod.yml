@@ -1,0 +1,13 @@
+# Overlay for a real deployment (used via `docker compose -f docker-compose.yml -f
+# docker-compose.prod.yml ...`, as ansible/playbook.yml does): pulls the already
+# built-tested-scanned-and-pushed images from GHCR instead of building on the prod
+# box. `simulator` is deliberately excluded here - it's test traffic for local dev,
+# not something a real deployment with real field units would run.
+services:
+  api:
+    build: !reset null
+    image: ${SWARMOPS_IMAGE_REGISTRY:-ghcr.io/atia9}/swarmops-api:${SWARMOPS_IMAGE_TAG:-latest}
+
+  worker:
+    build: !reset null
+    image: ${SWARMOPS_IMAGE_REGISTRY:-ghcr.io/atia9}/swarmops-worker:${SWARMOPS_IMAGE_TAG:-latest}

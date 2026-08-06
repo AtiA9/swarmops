@@ -1,0 +1,33 @@
+groups:
+  - name: swarmops-alerts
+    rules:
+      # The DoD's required "real alert rule": more than 5 units silent at once looks
+      # like an ingestion-path problem (or a real field-wide outage), not one unit
+      # having a bad day - this is exactly the "mass signal loss" scenario in
+      # docs/runbooks/mass-signal-loss.md.
+      - alert: SwarmOpsMassSignalLoss
+        expr: count(swarmops_unit_seconds_since_update > 30) > 5
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $value }} units have lost signal simultaneously"
+          description: "More than 5 field units have had no telemetry update in over 30s at the same time. See docs/runbooks/mass-signal-loss.md."
+
+      - alert: SwarmOpsAnyUnitSignalLost
+        expr: swarmops_unit_seconds_since_update > 30
+        for: 5s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unit {{ $labels.unit_id }} has lost signal"
+          description: "No telemetry from {{ $labels.unit_id }} in {{ $value }}s (threshold 30s)."
+
+      - alert: SwarmOpsWorkerQueueBacklog
+        expr: swarmops_queue_depth > 100
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Telemetry queue backlog building up ({{ $value }} pending)"
+          description: "The worker is falling behind on the telemetry queue. See docs/runbooks/worker-falling-behind.md."

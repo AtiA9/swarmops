@@ -1,0 +1,96 @@
+{
+  "title": "SwarmOps Fleet Status",
+  "uid": "swarmops-fleet",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Units Active (reporting)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "count(swarmops_unit_seconds_since_update < 30)", "legendFormat": "active", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "green", "value": null } ] } }, "overrides": [] }
+    },
+    {
+      "id": 2,
+      "title": "Units Alerting (signal lost)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "count(swarmops_unit_seconds_since_update >= 30) OR vector(0)", "legendFormat": "alerting", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 3,
+      "title": "Alerts Fired / min (by type)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(increase(swarmops_alerts_fired_total[1m]))", "legendFormat": "alerts/min", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 4,
+      "title": "Telemetry Queue Depth",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "swarmops_queue_depth", "legendFormat": "queue depth", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 100 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 5,
+      "title": "Telemetry Ingest Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(swarmops_telemetry_ingest_total[1m]))", "legendFormat": "accepted/s", "refId": "A" },
+        { "expr": "sum(rate(swarmops_telemetry_rejected_total[1m]))", "legendFormat": "rejected/s", "refId": "B" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Ingest Latency p95",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(swarmops_telemetry_ingest_latency_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "A" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Alerts Fired by Type",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (alert_type) (rate(swarmops_alerts_fired_total[1m]))", "legendFormat": "{{alert_type}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Seconds Since Last Update (per unit)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "swarmops_unit_seconds_since_update", "legendFormat": "{{unit_id}}", "refId": "A" }
+      ]
+    }
+  ]
+}
