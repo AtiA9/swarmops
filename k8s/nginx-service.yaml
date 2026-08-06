@@ -1,0 +1,14 @@
+# ClusterIP by default so this manifest applies cleanly to any cluster (including
+# local kind, which has no cloud load balancer). On a real cluster with a LoadBalancer
+# controller, change `type` to LoadBalancer (or front this with an Ingress instead).
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: swarmops
+spec:
+  type: ClusterIP
+  selector: { app: nginx }
+  ports:
+    - port: 80
+      targetPort: 80

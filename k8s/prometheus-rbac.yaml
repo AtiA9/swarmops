@@ -1,0 +1,31 @@
+# Lets Prometheus discover pod endpoints behind the swarmops-api / swarmops-worker
+# Services directly (kubernetes_sd_configs), so both api replicas show up as their
+# own scrape targets - the k8s-native equivalent of the dns_sd_configs trick used in
+# observability/prometheus.yml for Docker Compose.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: swarmops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: swarmops-prometheus
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints", "services", "pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: swarmops-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: swarmops
+roleRef:
+  kind: ClusterRole
+  name: swarmops-prometheus
+  apiGroup: rbac.authorization.k8s.io

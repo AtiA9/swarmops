@@ -1,0 +1,41 @@
+# replicas: 1, deliberately - the registry-sync and signal-lost-sweep loops each
+# run independently per pod with no leader election, so scaling this past 1 today
+# would duplicate sweeps and double-fire (cooldown-deduped, but still wasteful)
+# rather than share the work. Documented as a known follow-up in docs/SLO.md rather
+# than silently shipping a broken multi-replica worker.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swarmops-worker
+  namespace: swarmops
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: swarmops-worker }
+  template:
+    metadata:
+      labels: { app: swarmops-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/atia9/swarmops-worker:latest
+          ports:
+            - containerPort: 9200
+          envFrom:
+            - configMapRef: { name: swarmops-config }
+            - secretRef: { name: swarmops-secrets }
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: swarmops-worker
+  namespace: swarmops
+spec:
+  selector: { app: swarmops-worker }
+  ports:
+    - name: metrics
+      port: 9200
+      targetPort: 9200

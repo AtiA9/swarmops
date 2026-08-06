@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: swarmops
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+    rule_files:
+      - /etc/prometheus/alert-rules.yml
+    scrape_configs:
+      - job_name: swarmops-api
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces: { names: ["swarmops"] }
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: swarmops-api
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: http
+      - job_name: swarmops-worker
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces: { names: ["swarmops"] }
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: swarmops-worker
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics
+  alert-rules.yml: |
+    groups:
+      - name: swarmops-alerts
+        rules:
+          - alert: SwarmOpsMassSignalLoss
+            expr: count(swarmops_unit_seconds_since_update > 30) > 5
+            for: 15s
+            labels: { severity: critical }
+            annotations:
+              summary: "{{ $value }} units have lost signal simultaneously"
+          - alert: SwarmOpsAnyUnitSignalLost
+            expr: swarmops_unit_seconds_since_update > 30
+            for: 5s
+            labels: { severity: warning }
+            annotations:
+              summary: "Unit {{ $labels.unit_id }} has lost signal"
+          - alert: SwarmOpsWorkerQueueBacklog
+            expr: swarmops_queue_depth > 100
+            for: 30s
+            labels: { severity: warning }
+            annotations:
+              summary: "Telemetry queue backlog building up ({{ $value }} pending)"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: swarmops
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: prometheus }
+  template:
+    metadata:
+      labels: { app: prometheus }
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.55.1
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+      volumes:
+        - name: config
+          configMap: { name: prometheus-config }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: swarmops
+spec:
+  selector: { app: prometheus }
+  ports:
+    - port: 9090
+      targetPort: 9090

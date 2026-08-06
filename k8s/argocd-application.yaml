@@ -1,0 +1,32 @@
+# Every deploy goes through a git commit + `argocd app sync` - never `kubectl apply`
+# by hand. Apply this once into the argocd namespace to register the app:
+#   kubectl apply -f k8s/argocd-application.yaml -n argocd
+#
+# `secret.example.yaml` is deliberately excluded from sync (see that file) - the real
+# swarmops-secrets Secret is created out-of-band, not through this GitOps path.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: swarmops
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AtiA9/swarmops.git
+    targetRevision: main
+    path: k8s
+    directory:
+      recurse: true
+      exclude: "secret.example.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: swarmops
+  syncPolicy:
+    automated:
+      prune: true # remove resources deleted from git
+      selfHeal: true # revert manual kubectl edits back to what git says (see the
+      # GitOps-drift scenario in docs/runbooks/) - this is what makes the
+      # "no manual kubectl apply" requirement actually enforced, not just a rule
+      # people are trusted to follow.
+    syncOptions:
+      - CreateNamespace=false # namespace.yaml in this same directory creates it

@@ -1,0 +1,25 @@
+# Non-secret config only. Battery threshold / geofence sweep interval / base
+# coordinates live here (not hardcoded in the image) precisely so ops can retune
+# them with `kubectl edit configmap` + a rollout, no rebuild - the stage-6 requirement.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: swarmops-config
+  namespace: swarmops
+data:
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  QUEUE_KEY: "telemetry:queue"
+  REGISTRY_KEY: "unit_registry"
+  MAX_SPEED_KMH: "300"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "swarmops"
+  POSTGRES_USER: "swarmops"
+  BATTERY_LOW_THRESHOLD: "15"
+  SIGNAL_LOST_SECONDS: "30"
+  BASE_LAT: "31.9730"
+  BASE_LON: "34.7925"
+  ALERT_COOLDOWN_SECONDS: "60"
+  REGISTRY_REFRESH_SECONDS: "30"
+  SIGNAL_SWEEP_INTERVAL_SECONDS: "5"
