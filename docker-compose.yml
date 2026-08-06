@@ -1,0 +1,144 @@
+name: swarmops
+
+networks:
+  swarmops-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+  grafana-data:
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    networks: [swarmops-net]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: swarmops-api:local
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      QUEUE_KEY: telemetry:queue
+      REGISTRY_KEY: unit_registry
+      MAX_SPEED_KMH: "300"
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+    networks: [swarmops-net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks: [swarmops-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: swarmops
+      POSTGRES_USER: swarmops
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swarmops}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks: [swarmops-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swarmops -d swarmops"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: swarmops-worker:local
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      QUEUE_KEY: telemetry:queue
+      REGISTRY_KEY: unit_registry
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: swarmops
+      POSTGRES_USER: swarmops
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swarmops}
+      BATTERY_LOW_THRESHOLD: "15"
+      SIGNAL_LOST_SECONDS: "30"
+      BASE_LAT: "31.9730"
+      BASE_LON: "34.7925"
+      ALERT_COOLDOWN_SECONDS: "60"
+      REGISTRY_REFRESH_SECONDS: "15"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks: [swarmops-net]
+
+  simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    image: swarmops-simulator:local
+    environment:
+      API_BASE_URL: http://nginx/api
+      MIN_INTERVAL_SECONDS: "3"
+      MAX_INTERVAL_SECONDS: "7"
+      # Uncomment to force a specific unit into an anomaly for a live demo:
+      # FORCE_LOW_BATTERY_UNIT: unit-001
+      # FORCE_SIGNAL_LOSS_UNIT: unit-002
+      # FORCE_GEOFENCE_BREACH_UNIT: unit-003
+    depends_on:
+      - nginx
+      - worker
+    networks: [swarmops-net]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    ports:
+      - "9090:9090"
+    networks: [swarmops-net]
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./observability/grafana-dashboard-provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+      - ./observability/grafana-dashboard.json:/var/lib/grafana/dashboards/swarmops.json:ro
+    depends_on:
+      - prometheus
+    networks: [swarmops-net]
