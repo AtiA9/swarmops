@@ -1,0 +1,156 @@
+{
+  "base_lat": 31.973,
+  "base_lon": 34.7925,
+  "units": [
+    {
+      "id": "unit-001",
+      "token": "1a04ec57d4aa086729dceedc25f50d49",
+      "geofence_radius_km": 15.0
+    },
+    {
+      "id": "unit-002",
+      "token": "c0ecaa0712222c6ae2e37322d5dcb3b1",
+      "geofence_radius_km": 10.0
+    },
+    {
+      "id": "unit-003",
+      "token": "5f50f78867dec39e3bc5aec6639a716f",
+      "geofence_radius_km": 6.0
+    },
+    {
+      "id": "unit-004",
+      "token": "c7fb9b75df8c5aa6d41f2b111e832fe1",
+      "geofence_radius_km": 15.0
+    },
+    {
+      "id": "unit-005",
+      "token": "a1774420407f0cf4edc7b9797edf7368",
+      "geofence_radius_km": 15.0
+    },
+    {
+      "id": "unit-006",
+      "token": "9196e8a9fdee73db54a9a4b78ec47e36",
+      "geofence_radius_km": 4.0
+    },
+    {
+      "id": "unit-007",
+      "token": "e4b249a106ae7e4f0145c98c66adabd3",
+      "geofence_radius_km": 6.0
+    },
+    {
+      "id": "unit-008",
+      "token": "5c048b509a8fd54e4e19f1eb43bc118a",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-009",
+      "token": "af5f43abb6833f2e518c9ba944137ff9",
+      "geofence_radius_km": 6.0
+    },
+    {
+      "id": "unit-010",
+      "token": "f74048cc908d0bf74ddb24c007519c78",
+      "geofence_radius_km": 5.0
+    },
+    {
+      "id": "unit-011",
+      "token": "9eb6fcdeffb52aac0511a843d44dfbaa",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-012",
+      "token": "b7cbb0904bca7818c8480ab188614cda",
+      "geofence_radius_km": 5.0
+    },
+    {
+      "id": "unit-013",
+      "token": "9fe8f21b11d1895b83e35bbda2431eae",
+      "geofence_radius_km": 6.0
+    },
+    {
+      "id": "unit-014",
+      "token": "9bf56294cc7a5e1ce8cd61a8025da96b",
+      "geofence_radius_km": 3.0
+    },
+    {
+      "id": "unit-015",
+      "token": "f0312b77c5482ad4c8fdda326ff2cc02",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-016",
+      "token": "3a73c56b13264b95cf9b71ba0a6e1183",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-017",
+      "token": "7732528f24ed792545fd17d970901c47",
+      "geofence_radius_km": 3.0
+    },
+    {
+      "id": "unit-018",
+      "token": "da0cda4f29fb4a00db8142599bf8f8a5",
+      "geofence_radius_km": 10.0
+    },
+    {
+      "id": "unit-019",
+      "token": "44089a2cdc450a50c76268f8d611ac40",
+      "geofence_radius_km": 6.0
+    },
+    {
+      "id": "unit-020",
+      "token": "620c58fa4167666ae453f484e531d347",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-021",
+      "token": "0643a08dd33aab46bbed7db2856c28c2",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-022",
+      "token": "dae8da3c1eb59f7e9dd687aea74c2ca0",
+      "geofence_radius_km": 5.0
+    },
+    {
+      "id": "unit-023",
+      "token": "201b2525f58a32c13c018618c31543bb",
+      "geofence_radius_km": 2.0
+    },
+    {
+      "id": "unit-024",
+      "token": "435e4b2ff9093f0888472c1b994c0861",
+      "geofence_radius_km": 6.0
+    },
+    {
+      "id": "unit-025",
+      "token": "d7cb092f01611e2b0b6fea00a110b10c",
+      "geofence_radius_km": 15.0
+    },
+    {
+      "id": "unit-026",
+      "token": "b78ddc7f6be3ca8a2d110f382a357cbd",
+      "geofence_radius_km": 3.0
+    },
+    {
+      "id": "unit-027",
+      "token": "25df0b5b58706f685db2d40ef3789778",
+      "geofence_radius_km": 8.0
+    },
+    {
+      "id": "unit-028",
+      "token": "76e321f54928a5b570dd6c17d674b50c",
+      "geofence_radius_km": 5.0
+    },
+    {
+      "id": "unit-029",
+      "token": "4f0bb23d9d35c95973efc4dfc8ee9dff",
+      "geofence_radius_km": 4.0
+    },
+    {
+      "id": "unit-030",
+      "token": "f06389f7acffc62d62e2d28cd017a022",
+      "geofence_radius_km": 6.0
+    }
+  ]
+}
