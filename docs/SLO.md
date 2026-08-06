@@ -52,12 +52,8 @@ SLO philosophy above: a target only does its job if hitting it is actually possi
   proven end-to-end against a local `kind` cluster synced from this repo's real GitHub
   history.
 - **30-day SLO actuals don't exist yet** — see above.
-- **GitHub Actions has not run yet on this repo.** The `ci-cd.yml` workflow is valid
-  and registered (confirmed via the Actions API), and every stage's *logic* was
-  verified manually against the real built artifacts (pytest 16/16, Bandit clean,
-  Trivy clean with the `ignore-unfixed` policy above) — but zero runs have been
-  created for several pushes to `main`, with no error surfaced via the API. This
-  matches GitHub's Actions-verification gate for newer accounts. See the root
-  README's status table for the exact diagnostic and the one-time fix (verify the
-  account on github.com, then a normal `git push` starts working with no code
-  changes needed).
+- ~~GitHub Actions has not run yet on this repo~~ **Resolved.** Actions was blocked
+  for roughly the first 15 minutes after repo creation (GitHub's new-account
+  verification gate, zero runs with no error surfaced via the API) - once that
+  cleared, every queued run from earlier pushes executed automatically. The pipeline
+  is confirmed green end-to-end; see the root README's status table for the run link.
